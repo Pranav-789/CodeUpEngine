@@ -17,6 +17,7 @@ services:
       context: ./backend
     ports:
       - "5000:5000"
+    env_file: ./backend/.env
     environment:
       - NODE_ENV=development
       - MONGODB_URI=mongodb://admin:30406@mongo:27017/CodeUpEngine?authSource=admin

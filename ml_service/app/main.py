@@ -7,6 +7,7 @@ import app.core.logger  # Ensure logger config is initialized early
 from app.db.mongoDB import connect_to_mongo, close_mongo_connection
 from app.api.routes import router as api_router
 
+from app.ml.indexer import rebuild_global_knn_index
 import os
 
 @asynccontextmanager
@@ -15,6 +16,10 @@ async def lifespan(app: FastAPI):
     mongo_uri = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
     db_name = os.environ.get("MONGO_DB_NAME", "CodeUpEngine")
     await connect_to_mongo(mongo_uri, db_name)
+    
+    # Pre-build KNN index so recommendations don't fail immediately
+    await rebuild_global_knn_index()
+    
     yield
     # Shutdown: Clean up connections
     await close_mongo_connection()

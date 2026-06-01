@@ -20,7 +20,11 @@ interface accessHeader {
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
-    const token = authHeader?.split(' ')[1]
+    let token = authHeader?.split(' ')[1];
+
+    if (!token && req.cookies && req.cookies.accessToken) {
+        token = req.cookies.accessToken;
+    }
 
     if(!token){
         throw new ApiError(401, "Unauthorized: No token provided");

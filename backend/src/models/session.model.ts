@@ -2,6 +2,7 @@ import mongoose, {Schema, Document} from "mongoose"
 
 export interface ISession extends Document{
     userId: mongoose.Types.ObjectId;
+    deviceId: string;
     refreshToken: string;
     expiresAt: Date;
     createdAt: Date;
@@ -14,6 +15,10 @@ const SessionSchema: Schema = new Schema({
         ref: "User",
         required: true,
         index: true
+    },
+    deviceId: {
+        type: String,
+        required: true
     },
     refreshToken: {
         type: String,

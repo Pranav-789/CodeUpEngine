@@ -2,7 +2,9 @@ import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import UserMetrics from "../models/usermetric.model.js";
 
-const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    maxRetriesPerRequest: null
+});
 
 export const recommendationWorker = new Worker('recommendationQueue', async (job) => {
     const { userId } = job.data;
@@ -26,7 +28,8 @@ export const recommendationWorker = new Worker('recommendationQueue', async (job
     };
 
     // 2. Call FastAPI
-    const response = await fetch(`http://localhost:8000/recommend`, {
+    const mlServiceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+    const response = await fetch(`${mlServiceUrl}/recommend`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(fastapiPayload)
@@ -40,17 +43,20 @@ export const recommendationWorker = new Worker('recommendationQueue', async (job
     const data = await response.json() as {
         user_id: string;
         updated_vector: number[];
-        recommended_problem_ids: string[];
+        recommendations: Array<{
+            problem_id: string;
+            target_topic: string;
+        }>;
     };
 
     // 3. Update MongoDB
     metrics.topicEloVector = data.updated_vector;
     
     // Map recommendations to the schema
-    metrics.activeRecommendations = data.recommended_problem_ids.map((id: string) => ({
-        problemId: id,
+    metrics.activeRecommendations = data.recommendations.map((rec) => ({
+        problemId: rec.problem_id,
         recommendedAt: new Date(),
-        targetTopic: "mixed" 
+        targetTopic: rec.target_topic 
     })) as any;
     
     metrics.lastCalculatedAt = new Date();

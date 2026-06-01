@@ -152,6 +152,7 @@ export const login = asyncHandler(async(req: Request, res: Response) => {
 
     const newSession = await Session.create({
         userId: user._id,
+        deviceId: deviceId,
         refreshToken: refreshToken,
         expiresAt: new Date(Date.now() + 7*24*60*60*1000),
     });
@@ -171,7 +172,7 @@ export const login = asyncHandler(async(req: Request, res: Response) => {
     });
 
     return res.status(200).json(
-        new ApiResponse(200, {sessionId: newSession._id, accessToken, refreshToken}, "User logged in successfully")
+        new ApiResponse(200, {sessionId: newSession._id}, "User logged in successfully")
     );
 });
 
@@ -253,33 +254,14 @@ export const confirmResetPassword = asyncHandler(async(req: Request, res: Respon
 })
 
 export const logout = asyncHandler(async(req: Request, res: Response) => {
-    const {sessionId} = req.body;
+    const refreshToken = req.cookies?.refreshToken;
 
-    if(!sessionId){
-        throw new ApiError(400, "Session ID is required for logging out");
-    }
-
-    const session = await Session.findById(sessionId);
-
-    if(!session){
-        throw new ApiError(404, "Session not found");
-    }
-
-    const accessToken = req.cookies?.accessToken;
-    if(!accessToken){
-        throw new ApiError(401, "Access token is missing");
-    }
-
-    try {
-        const decodedToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET as string) as unknown as {userId: string};
-        if(session.userId.toString() !== decodedToken.userId){
-            throw new ApiError(403, "Unauthorized to logout this session");
+    if(refreshToken){
+        const session = await Session.findOne({ refreshToken });
+        if(session){
+            await session.deleteOne();
         }
-    } catch (error) {
-        throw new ApiError(401, "Invalid or expired access token");
     }
-
-    await session.deleteOne();
 
     res.clearCookie("accessToken", {
         httpOnly: true,
@@ -341,7 +323,7 @@ export const refreshAccessToken = asyncHandler(async(req: Request, res: Response
         });
 
         return res.status(200).json(
-            new ApiResponse(200, {accessToken, refreshToken: newRefreshToken}, "Access token refreshed successfully")
+            new ApiResponse(200, {}, "Access token refreshed successfully")
         );
     } catch (error) {
         throw new ApiError(401, "Invalid or expired refresh token");
