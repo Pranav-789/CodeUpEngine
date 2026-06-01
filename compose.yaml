@@ -1,0 +1,70 @@
+services:
+
+  # 1. Frontend (React) - Commented out for now as the frontend directory is empty
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - REACT_APP_API_URL=http://localhost:5000  # Points to the Node.js backend port on your host
+  #   depends_on:
+  #     - backend
+
+  # 2. Backend (Node.js)
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:30406@mongo:27017/CodeUpEngine?authSource=admin
+      - ML_SERVICE_URL=http://ml_service:8000
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongo
+      - redis
+
+  # 3. ML Service (FastAPI)
+  ml_service:
+    build:
+      context: ./ml_service
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=your-super-secret-key
+      - ALGORITHM=HS256
+      - MONGO_URI=mongodb://admin:30406@mongo:27017/?authSource=admin
+      - MONGO_DB_NAME=CodeUpEngine
+    depends_on:
+      - mongo
+
+  # Cache (Redis)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  # 4. Database (MongoDB)
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017" # Exposed to host on 27017 to avoid local system conflicts
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: 30406
+    volumes:
+      - /home/pranav/Documents/Docker/data:/data/db
+
+  # 5. DB GUI (Mongo-Express)
+  mongo-express:
+    image: mongo-express:latest
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=30406
+      - ME_CONFIG_MONGODB_URL=mongodb://admin:30406@mongo:27017/?authSource=admin
+    depends_on:
+      - mongo

@@ -1,0 +1,43 @@
+# ==========================================
+# General / OS Files
+# ==========================================
+.DS_Store
+*.log
+Thumbs.db
+
+# ==========================================
+# Backend (Node.js / TypeScript)
+# ==========================================
+backend/node_modules/
+backend/dist/
+backend/.env
+
+# ==========================================
+# Frontend
+# ==========================================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.next/
+
+# ==========================================
+# ML Service (Python / FastAPI)
+# ==========================================
+# Virtual Environments
+ml_service/venv/
+ml_service/env/
+
+# Byte-compiled / Cache Files
+ml_service/**/__pycache__/
+ml_service/**/*.pyc
+ml_service/**/*.pyo
+ml_service/**/*.pyd
+.pytest_cache/
+
+# Secrets
+ml_service/.env
+
+# Logs
+ml_service/app/logs/*
+!ml_service/app/logs/.gitkeep

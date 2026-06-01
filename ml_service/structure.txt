@@ -1,0 +1,40 @@
+ml_service/
+├── app/
+│   ├── __init__.py
+│   ├── main.py                 # The FastAPI application instance & lifecycle events
+│   │
+│   ├── api/                    # HTTP routing
+│   │   ├── __init__.py
+│   │   ├── routes.py           # The POST /recommend and POST /build-index endpoints
+│   │   └── dependencies.py     # Auth/API key verification (to trust the Node server)
+│   │
+│   ├── core/                   # Application-wide settings
+│   │   ├── __init__.py
+│   │   ├── config.py           # Environment variables (Pydantic BaseSettings)
+│   │   ├── logger.py           # Centralized logging configuration
+│   │   └── exceptions.py       # Custom error handlers (e.g., ModelNotTrainedError)
+│   │   └── utils.py            # Helper functions
+│   ├── db/                     # Data ingestion layer
+│   │   ├── __init__.py
+│   │   └── mongodb.py          # Motor (Async PyMongo) connection pool
+│   │
+│   ├── models/                 # Pydantic schemas (Data Validation)
+│   │   ├── __init__.py
+│   │   ├── requests.py         # Schemas for incoming Node.js payloads
+│   │   └── responses.py        # Schemas for outgoing JSON back to Node.js
+│   │
+│   ├── ml/                     # The Machine Learning logic
+│   │   ├── __init__.py
+│   │   ├── knn_model.py        # Scikit-Learn NearestNeighbors wrapper class
+│   │   ├── vector_math.py      # The Aspirational Vector mutation logic
+│   │   └── indexer.py          # The script that fetches all users and "trains" the tree
+│   │
+│   └── services/               # Business logic
+│       ├── __init__.py
+│       ├── elo_service.py      # Player vs Environment Elo math using NumPy
+│       └── recommendation.py   # The orchestrator that ties Elo -> Mutate -> KNN together
+│
+├── tests/                      # Pytest directory
+├── .env                        # Local environment variables
+├── requirements.txt            # Python dependencies (fastapi, scikit-learn, numpy, motor, pydantic)
+└── Dockerfile                  # Containerization for deployment
