@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Coins, LogOut, LayoutDashboard, BrainCircuit } from "lucide-react";
+import { ThemeToggle } from "../ThemeToggle";
 
 export const Layout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -53,18 +54,28 @@ export const Layout: React.FC = () => {
           </nav>
         </div>
 
-        <div className="mt-8 border-t border-border pt-4">
-          <div className="mb-4">
-            <p className="text-sm font-medium">{user?.codeforcesHandle}</p>
-            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+        <div className="p-4 border-t border-border flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+              {user?.codeforcesHandle?.charAt(0).toUpperCase()}
+            </div>
+            <div className="overflow-hidden">
+              <p className="font-medium truncate">{user?.codeforcesHandle}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+            </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-sm text-red-500 hover:text-red-600 transition-colors w-full"
-          >
-            <LogOut size={18} />
-            Logout
-          </button>
+          
+          <div className="flex items-center justify-between">
+            <ThemeToggle />
+            
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors text-sm"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          </div>
         </div>
       </aside>
 

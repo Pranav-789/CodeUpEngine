@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { UserMetricsProvider } from "./contexts/UserMetricsContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { Layout } from "./components/Layout/Layout";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -57,9 +58,11 @@ const AppRoutes = () => {
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ThemeProvider defaultTheme="system" storageKey="codeupengine-theme">
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };

@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { BrainCircuit, Target, Zap, LayoutDashboard } from "lucide-react";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export const Landing: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -14,8 +15,10 @@ export const Landing: React.FC = () => {
           <BrainCircuit size={32} />
           <span className="text-xl font-bold tracking-tight text-foreground">CodeUpEngine</span>
         </div>
-        <nav>
-          {isAuthenticated ? (
+        <div className="flex items-center gap-6">
+          <ThemeToggle />
+          <nav>
+            {isAuthenticated ? (
             <Link 
               to="/dashboard" 
               className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
@@ -34,6 +37,7 @@ export const Landing: React.FC = () => {
             </div>
           )}
         </nav>
+        </div>
       </header>
 
       {/* Hero Section */}
