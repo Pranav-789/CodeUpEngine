@@ -1,7 +1,19 @@
 import nodemailer from "nodemailer";
+import dns from "node:dns/promises";
+
+// Pre-resolve Gmail's IPv4 to forcibly bypass Nodemailer's broken IPv6 preference on Render
+let smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+try {
+    const addresses = await dns.resolve4(smtpHost);
+    if (addresses.length > 0) {
+        smtpHost = addresses[0];
+    }
+} catch (error) {
+    console.error("Failed to resolve IPv4 for SMTP host, falling back to default.", error);
+}
 
 export const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    host: smtpHost,
     port: 465, // Force 465 for Gmail
     secure: true,
     auth: {
@@ -9,10 +21,9 @@ export const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_PASSWORD as string
     },
     tls: {
+        servername: process.env.SMTP_HOST || "smtp.gmail.com", // Essential for TLS verification when connecting via IP
         rejectUnauthorized: true,
-    },
-    // Force IPv4 resolution to prevent Render IPv6 ENETUNREACH errors
-    family: 4
+    }
 } as any);
 
 const getEmailTemplate = (title: string, username: string, message: string, buttonText?: string, buttonUrl?: string) => `
