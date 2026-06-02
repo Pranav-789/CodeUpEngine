@@ -47,11 +47,13 @@ app.use("/api/v1/user", UserRouter)
 app.post("/api/v1/sync", requireAuth, syncCodeforcesProfile)
 
 app.use((err: ApiError, req: Request, res: Response, next: NextFunction)=> {
+    console.error("Global Error Handler caught:", err);
     res.status(err.statusCode || 500).json({
         success: false,
-        message: err.message
+        message: err.message,
+        errors: err.errors
     });
-})
+});
 
 connectDB().then(()=>
     {
