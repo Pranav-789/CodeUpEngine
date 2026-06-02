@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: codeupengine-ml-service
+    env: docker
+    rootDir: ml_service
+    plan: free
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB_NAME
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
