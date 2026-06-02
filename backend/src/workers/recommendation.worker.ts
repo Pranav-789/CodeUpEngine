@@ -6,6 +6,7 @@ import User from "../models/user.model.js";
 const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: null
 });
+redisConnection.on('error', (err) => console.error('Redis Worker Error:', err));
 
 export const recommendationWorker = new Worker('recommendationQueue', async (job) => {
     const { userId } = job.data;
