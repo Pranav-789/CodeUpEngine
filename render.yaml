@@ -13,3 +13,36 @@ services:
         generateValue: true
       - key: ALGORITHM
         value: HS256
+
+  - type: web
+    name: codeupengine-backend
+    env: docker
+    rootDir: backend
+    plan: free
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: ML_SERVICE_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: BACKEND_BASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: ACCESS_TOKEN_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: VERIFY_EMAIL_TOKEN_SECRET
+        generateValue: true
+      - key: FORGOT_PASSWORD_TOKEN_SECRET
+        generateValue: true
