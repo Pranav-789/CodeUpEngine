@@ -23,10 +23,10 @@ export const Layout: React.FC = () => {
     <div className="h-screen overflow-hidden bg-background text-foreground flex flex-col md:flex-row">
       <aside className="w-full md:w-64 md:h-screen overflow-y-auto border-b md:border-b-0 md:border-r border-border p-4 flex flex-col justify-between shrink-0">
         <div>
-          <div className="font-bold text-2xl mb-8 flex items-center gap-2 text-primary">
+          <Link to="/" className="flex items-center gap-2 mb-8 text-primary px-2 hover:opacity-80 transition-opacity">
             <BrainCircuit size={28} />
-            CodeUpEngine
-          </div>
+            <span className="text-xl font-bold tracking-tight text-foreground">CodeUpEngine</span>
+          </Link>
           
           <div className="mb-6 bg-muted p-4 rounded-xl flex items-center justify-between border border-border">
             <div>

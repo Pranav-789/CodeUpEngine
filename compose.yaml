@@ -20,13 +20,9 @@ services:
     env_file: ./backend/.env
     environment:
       - NODE_ENV=development
-      - MONGODB_URI=mongodb://admin:30406@mongo:27017/CodeUpEngine?authSource=admin
       - ML_SERVICE_URL=http://ml_service:8000
-      - REDIS_URL=redis://redis:6379
       - CORS_ORIGIN=http://localhost:5173
-    depends_on:
-      - mongo
-      - redis
+    depends_on: []
 
   # 3. ML Service (FastAPI)
   ml_service:
@@ -34,13 +30,10 @@ services:
       context: ./ml_service
     ports:
       - "8000:8000"
+    env_file: ./ml_service/.env
     environment:
       - SECRET_KEY=your-super-secret-key
       - ALGORITHM=HS256
-      - MONGO_URI=mongodb://admin:30406@mongo:27017/?authSource=admin
-      - MONGO_DB_NAME=CodeUpEngine
-    depends_on:
-      - mongo
 
   # Cache (Redis)
   redis:

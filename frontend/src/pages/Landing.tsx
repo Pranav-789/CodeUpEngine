@@ -11,10 +11,10 @@ export const Landing: React.FC = () => {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Navbar */}
       <header className="px-8 py-6 flex items-center justify-between border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center gap-2 text-primary">
+        <Link to="/" className="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity">
           <BrainCircuit size={32} />
           <span className="text-xl font-bold tracking-tight text-foreground">CodeUpEngine</span>
-        </div>
+        </Link>
         <div className="flex items-center gap-6">
           <ThemeToggle />
           <nav>

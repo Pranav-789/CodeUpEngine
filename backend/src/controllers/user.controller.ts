@@ -78,7 +78,7 @@ export const syncCodeforcesProfile = asyncHandler(async(req: Request, res: Respo
             throw new ApiError(404, "Codeforces handle not found");
         }
 
-        const tokenResult = await TokenService.consumeTokens(user.userId, 10);
+        const tokenResult = await TokenService.consumeTokens(user.userId, 5);
         if (!tokenResult.success) {
             throw new ApiError(403, "Insufficient tokens to sync Codeforces profile");
         }
