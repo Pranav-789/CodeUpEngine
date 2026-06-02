@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 from bson import ObjectId
 
-async def extract_unsolved_problems(peer_ids: list[str], user_seen_problems: set[str]) -> list[dict]:
-    """Fetches peers' solved problems, filters out what the user knows, and ranks the best."""
+async def extract_unsolved_problems(peer_ids: list[str], user_seen_problems: set[str], user_rating: int = None) -> list[dict]:
+    """Fetches peers' solved problems, filters out what the user knows, and ranks the best based on rating."""
     db = get_database()
     if db is None:
         logger.error("Database not connected.")
@@ -27,11 +27,15 @@ async def extract_unsolved_problems(peer_ids: list[str], user_seen_problems: set
         if "recentSubmissions" in peer:
             for sub in peer["recentSubmissions"]:
                 prob_id = sub["problemId"]
+                prob_rating = sub.get("rating", 0)
                 # Filter 1: Did the peer actually solve it?
                 # Filter 2: Has our user already seen/attempted it?
                 if sub.get("correctSubmissions", 0) > 0 and prob_id not in user_seen_problems:
-                    # Tally how many peers solved this exact problem
-                    peer_problem_counts[prob_id] = peer_problem_counts.get(prob_id, 0) + 1
+                    # Filter 3: Ensure problem rating is within [user_rating - 100, user_rating + 200]
+                    # If rating is 0 (unrated problem) or user_rating is missing, we skip the constraint
+                    if user_rating is None or prob_rating == 0 or (user_rating - 100 <= prob_rating <= user_rating + 200):
+                        # Tally how many peers solved this exact problem
+                        peer_problem_counts[prob_id] = peer_problem_counts.get(prob_id, 0) + 1
                     if prob_id not in problem_tags:
                         tags = sub.get("tags", [])
                         problem_tags[prob_id] = tags[0] if tags else "mixed"
@@ -56,7 +60,7 @@ async def generate_recommendations(req: RecommendationRequest) -> dict:
     
     # 4. Extract and filter the problems
     user_seen_set = {sub.problem_id for sub in req.recent_submissions}
-    recommended_problems = await extract_unsolved_problems(peer_ids, user_seen_set)
+    recommended_problems = await extract_unsolved_problems(peer_ids, user_seen_set, req.user_rating)
     
     # Fallback mechanism: If peers didn't provide 5 unique problems, 
     # you would ideally query a generic pool of highly-rated problems here.

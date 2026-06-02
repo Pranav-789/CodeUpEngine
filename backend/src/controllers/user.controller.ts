@@ -4,6 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import User from "../models/user.model.js";
 import UserMetrics from "../models/usermetric.model.js";
+import Problem from "../models/problem.model.js";
 import { TokenService } from "../utils/tokenService.js";
 
 const CODEFORCES_API_BASE_URL = 'https://codeforces.com/api';
@@ -25,12 +26,8 @@ export const getProfile = asyncHandler(async(req: Request, res: Response) => {
         
         const metrics = await UserMetrics.findOne({userId: user.userId}).select("-recentSubmission -userId");
 
-        if(!metrics){
-            throw new ApiError(404, "User metrics not found");
-        }
-
         return res.status(200).json(
-            new ApiResponse(200, {profile, metrics}, "User profile fetched successfully")
+            new ApiResponse(200, {profile, metrics: metrics || null}, "User profile fetched successfully")
         );
     } catch (error) {
         if (error instanceof ApiError) throw error;
@@ -103,11 +100,21 @@ export const syncCodeforcesProfile = asyncHandler(async(req: Request, res: Respo
 
         const submissions = submissionsData.result;
 
+        // Fetch all valid problems to filter out gym/unrated contests
+        const allValidProblems = await Problem.find().select("codeforcesId").lean();
+        const validProblemIds = new Set(allValidProblems.map(p => (p as any).codeforcesId));
+
         // Group by problemId and aggregate stats
         const problemMap = new Map<string, any>();
 
         for (const submission of submissions) {
             const problemId = `${submission.problem.contestId}-${submission.problem.index}`;
+            
+            // Strictly enforce that we only track problems from our valid database
+            if (!validProblemIds.has(problemId)) {
+                continue;
+            }
+
             const isCorrect = submission.verdict === "OK";
             const submissionTime = new Date(submission.creationTimeSeconds * 1000);
 

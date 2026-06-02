@@ -1,6 +1,7 @@
 import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import UserMetrics from "../models/usermetric.model.js";
+import User from "../models/user.model.js";
 
 const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: null
@@ -15,8 +16,25 @@ export const recommendationWorker = new Worker('recommendationQueue', async (job
         throw new Error(`User metrics not found for user ${userId}`);
     }
 
+    const user = await User.findById(userId);
+    let userRating = 1500;
+    if (user && user.codeforcesHandle) {
+        try {
+            const cfRes = await fetch(`https://codeforces.com/api/user.info?handles=${user.codeforcesHandle}`);
+            if (cfRes.ok) {
+                const cfData = await cfRes.json() as any;
+                if (cfData.status === "OK" && cfData.result && cfData.result.length > 0) {
+                    userRating = cfData.result[0].rating || 1500;
+                }
+            }
+        } catch (err) {
+            console.error("Failed to fetch rating:", err);
+        }
+    }
+
     const fastapiPayload = {
         user_id: userId,
+        user_rating: userRating,
         topic_elo_vector: metrics.topicEloVector,
         recent_submissions: metrics.recentSubmissions.map(sub => ({
             problem_id: sub.problemId,

@@ -172,7 +172,7 @@ export const login = asyncHandler(async(req: Request, res: Response) => {
     });
 
     return res.status(200).json(
-        new ApiResponse(200, {sessionId: newSession._id}, "User logged in successfully")
+        new ApiResponse(200, {sessionId: newSession._id, accessToken}, "User logged in successfully")
     );
 });
 
@@ -323,7 +323,7 @@ export const refreshAccessToken = asyncHandler(async(req: Request, res: Response
         });
 
         return res.status(200).json(
-            new ApiResponse(200, {}, "Access token refreshed successfully")
+            new ApiResponse(200, {accessToken}, "Access token refreshed successfully")
         );
     } catch (error) {
         throw new ApiError(401, "Invalid or expired refresh token");

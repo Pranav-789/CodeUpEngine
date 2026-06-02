@@ -1,15 +1,15 @@
 services:
 
-  # 1. Frontend (React) - Commented out for now as the frontend directory is empty
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - REACT_APP_API_URL=http://localhost:5000  # Points to the Node.js backend port on your host
-  #   depends_on:
-  #     - backend
+  # 1. Frontend (React)
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5000/api/v1
+    depends_on:
+      - backend
 
   # 2. Backend (Node.js)
   backend:
@@ -23,6 +23,7 @@ services:
       - MONGODB_URI=mongodb://admin:30406@mongo:27017/CodeUpEngine?authSource=admin
       - ML_SERVICE_URL=http://ml_service:8000
       - REDIS_URL=redis://redis:6379
+      - CORS_ORIGIN=http://localhost:5173
     depends_on:
       - mongo
       - redis

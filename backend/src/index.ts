@@ -7,6 +7,9 @@ import connectDB from "./db/index.js";
 import AuthRouter from "./routes/auth.routes.js";
 import RecommendationRouter from "./routes/recommendation.route.js";
 import UserRouter from "./routes/user.routes.js";
+import rateLimit from "express-rate-limit";
+import { syncCodeforcesProfile } from "./controllers/user.controller.js";
+import { requireAuth } from "./middlewares/auth.middlewares.js";
 
 // Initialize workers
 import "./workers/recommendation.worker.js";
@@ -32,10 +35,16 @@ app.get("/", (req: Request, res: Response)=> {
     return res.json({"message": "The server is live"});
 });
 
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 100,
+    message: "Too many requests from this IP, please try again after an hour"
+});
 
-app.use("/api/v1/auth", AuthRouter)
+app.use("/api/v1/auth", authLimiter, AuthRouter)
 app.use("/api/v1/recommendations", RecommendationRouter)
 app.use("/api/v1/user", UserRouter)
+app.post("/api/v1/sync", requireAuth, syncCodeforcesProfile)
 
 app.use((err: ApiError, req: Request, res: Response, next: NextFunction)=> {
     res.status(err.statusCode || 500).json({
