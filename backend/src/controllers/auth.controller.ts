@@ -164,14 +164,14 @@ export const login = asyncHandler(async(req: Request, res: Response) => {
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: true,
-        sameSite: "strict",
+        sameSite: "none",
         maxAge: 10*60*60*1000,
     });
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: true,
-        sameSite: "strict",
+        sameSite: "none",
         maxAge: 7*24*60*60*1000,
     });
 
@@ -270,13 +270,13 @@ export const logout = asyncHandler(async(req: Request, res: Response) => {
     res.clearCookie("accessToken", {
         httpOnly: true,
         secure: true,
-        sameSite: "strict",
+        sameSite: "none",
     });
 
     res.clearCookie("refreshToken", {
         httpOnly: true,
         secure: true,
-        sameSite: "strict",
+        sameSite: "none",
     });
 
     return res.status(200).json(
@@ -315,14 +315,14 @@ export const refreshAccessToken = asyncHandler(async(req: Request, res: Response
         res.cookie("accessToken", accessToken, {
             httpOnly: true,
             secure: true,
-            sameSite: "strict",
+            sameSite: "none",
             maxAge: 10*60*60*1000,
         });
 
         res.cookie("refreshToken", newRefreshToken, {
             httpOnly: true,
             secure: true,
-            sameSite: "strict",
+            sameSite: "none",
             maxAge: 7*24*60*60*1000,
         });
 

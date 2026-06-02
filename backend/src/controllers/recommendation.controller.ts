@@ -52,10 +52,10 @@ export const generateRecommendation = asyncHandler(async (req: Request, res: Res
     const job = await recommendationQueue.add('generate-ml-recommendation', {
         userId: user.userId
     }, {
-        attempts: 3, // Retry up to 3 times
+        attempts: 5, // Retry up to 5 times (total ~2 minutes)
         backoff: {
             type: 'exponential',
-            delay: 3000 // Start with a 3 second delay, then 6s, to allow ML service to wake up
+            delay: 10000 // Start with a 10s delay, then 20s, 40s...
         }
     });
 
