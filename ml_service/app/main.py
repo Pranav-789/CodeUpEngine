@@ -15,11 +15,14 @@ import urllib.request
 async def keep_alive():
     url = os.environ.get("RENDER_EXTERNAL_URL", "https://codeupengine-ml-service.onrender.com")
     while True:
-        await asyncio.sleep(14 * 60) # 14 minutes
+        await asyncio.sleep(5 * 60) # 5 minutes
         try:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req) as response:
-                print(f"[Keep-Alive] Pinged ML service successfully. Status: {response.getcode()}")
+            def _ping():
+                with urllib.request.urlopen(req) as response:
+                    return response.getcode()
+            status_code = await asyncio.to_thread(_ping)
+            print(f"[Keep-Alive] Pinged ML service successfully. Status: {status_code}")
         except Exception as e:
             print(f"[Keep-Alive] Ping failed. Error: {e}")
 
