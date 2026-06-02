@@ -9,6 +9,19 @@ from app.api.routes import router as api_router
 
 from app.ml.indexer import rebuild_global_knn_index
 import os
+import asyncio
+import urllib.request
+
+async def keep_alive():
+    url = os.environ.get("RENDER_EXTERNAL_URL", "https://codeupengine-ml-service.onrender.com")
+    while True:
+        await asyncio.sleep(14 * 60) # 14 minutes
+        try:
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req) as response:
+                print(f"[Keep-Alive] Pinged ML service successfully. Status: {response.getcode()}")
+        except Exception as e:
+            print(f"[Keep-Alive] Ping failed. Error: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,6 +32,9 @@ async def lifespan(app: FastAPI):
     
     # Pre-build KNN index so recommendations don't fail immediately
     await rebuild_global_knn_index()
+    
+    # Start keep-alive background task
+    asyncio.create_task(keep_alive())
     
     yield
     # Shutdown: Clean up connections

@@ -59,6 +59,14 @@ app.use((err: ApiError, req: Request, res: Response, next: NextFunction)=> {
     });
 });
 
+// Keep-alive cron job to prevent Render from sleeping
+const BACKEND_URL = process.env.RENDER_EXTERNAL_URL || "https://codeupengine-backend.onrender.com";
+setInterval(() => {
+    fetch(BACKEND_URL)
+        .then(res => console.log(`[Keep-Alive] Pinged backend successfully. Status: ${res.status}`))
+        .catch(err => console.error(`[Keep-Alive] Ping failed:`, err.message));
+}, 14 * 60 * 1000); // 14 minutes
+
 connectDB().then(()=>
     {
         app.listen(PORT, ()=> console.log(`Server is listening on PORT ${PORT}`));
