@@ -75,11 +75,11 @@ export const register = asyncHandler(async(req: Request, res: Response) => {
 
     await newUser.save();    
 
-    const result = await sendVerificationEmail(createdUser.email, verifyEmailToken, createdUser.codeforcesHandle);
-
-    if(!result){
+    try {
+        await sendVerificationEmail(createdUser.email, verifyEmailToken, createdUser.codeforcesHandle);
+    } catch (emailError: any) {
         await User.findByIdAndDelete(createdUser._id);
-        throw new ApiError(500, "Failed to send verification email, please try again");
+        throw new ApiError(500, `Failed to send verification email: ${emailError.message}`);
     }
 
     return res.status(201).json(

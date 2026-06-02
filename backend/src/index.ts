@@ -1,5 +1,8 @@
 import express, {json, NextFunction, Request, Response} from "express"
 import "dotenv/config"
+import dns from "node:dns";
+
+dns.setDefaultResultOrder("ipv4first");
 import cors from "cors"
 import cookieParser from "cookie-parser";
 import {ApiError} from "./utils/ApiError.js";
