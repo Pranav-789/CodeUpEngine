@@ -8,8 +8,6 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Dashboard } from "./pages/Dashboard";
 import { Recommendations } from "./pages/Recommendations";
-import { ForgotPassword } from "./pages/ForgotPassword";
-import { ResetPassword } from "./pages/ResetPassword";
 import { Landing } from "./pages/Landing";
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -34,8 +32,6 @@ const AppRoutes = () => {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-      <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-      <Route path="/reset-password/:token" element={<PublicRoute><ResetPassword /></PublicRoute>} />
       
       <Route
         element={

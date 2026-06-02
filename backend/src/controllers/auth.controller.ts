@@ -58,6 +58,7 @@ export const register = asyncHandler(async(req: Request, res: Response) => {
         codeforcesHandle: codeforcesHandle,
         passwordHash: hashedPassword,
         role: "user",
+        isVerified: true, // BYPASSED EMAIL VERIFICATION
         nextWeeklyRefresh: new Date(Date.now() + 7*24*60*60*1000),
     });
 
@@ -75,15 +76,18 @@ export const register = asyncHandler(async(req: Request, res: Response) => {
 
     await newUser.save();    
 
+    // BYPASSED EMAIL VERIFICATION:
+    /*
     try {
         await sendVerificationEmail(createdUser.email, verifyEmailToken, createdUser.codeforcesHandle);
     } catch (emailError: any) {
         await User.findByIdAndDelete(createdUser._id);
-        throw new ApiError(500, `Failed to send verification email: ${emailError.message}`);
+        throw new ApiError(500, \`Failed to send verification email: \${emailError.message}\`);
     }
+    */
 
     return res.status(201).json(
-        new ApiResponse(201, createdUser, "User registered successfully, please verify your email")
+        new ApiResponse(201, createdUser, "User registered successfully")
     );
 });
 
