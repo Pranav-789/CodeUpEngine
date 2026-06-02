@@ -1,14 +1,19 @@
 import nodemailer from "nodemailer";
 
 export const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST as string,
-    port: Number(process.env.SMTP_PORT),
-    secure: Number(process.env.SMTP_PORT) === 465,
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: 465, // Force 465 for Gmail
+    secure: true,
     auth: {
         user: process.env.SMTP_USER as string,
         pass: process.env.SMTP_PASSWORD as string
-    }
-});
+    },
+    tls: {
+        rejectUnauthorized: true,
+    },
+    // Force IPv4 resolution to prevent Render IPv6 ENETUNREACH errors
+    family: 4
+} as any);
 
 const getEmailTemplate = (title: string, username: string, message: string, buttonText?: string, buttonUrl?: string) => `
 <!DOCTYPE html>
