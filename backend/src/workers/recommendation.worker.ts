@@ -2,6 +2,7 @@ import { Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import UserMetrics from "../models/usermetric.model.js";
 import User from "../models/user.model.js";
+import { TokenService } from "../utils/tokenService.js";
 
 const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: null
@@ -93,6 +94,17 @@ export const recommendationWorker = new Worker('recommendationQueue', async (job
 }, { connection: redisConnection as any });
 
 // Listen for errors so the worker doesn't crash silently
-recommendationWorker.on('failed', (job, err) => {
+recommendationWorker.on('failed', async (job, err) => {
     console.error(`Job ${job?.id} failed with error ${err.message}`);
+    
+    // Check if the job has exhausted all retries
+    if (job && job.attemptsMade >= (job.opts.attempts || 0)) {
+        console.log(`Job ${job.id} has reached maximum retry attempts. Refunding 5 tokens for user ${job.data.userId}...`);
+        try {
+            await TokenService.creditTokens(job.data.userId, 5);
+            console.log(`Successfully refunded 5 tokens to user ${job.data.userId}.`);
+        } catch (refundErr) {
+            console.error(`Failed to refund tokens for user ${job.data.userId}:`, refundErr);
+        }
+    }
 });

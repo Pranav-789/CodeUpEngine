@@ -49,15 +49,22 @@ export const generateRecommendation = asyncHandler(async (req: Request, res: Res
 
     // 2. Offload the heavy lifting to BullMQ
     // We pass the userId in the job data so the worker knows who to process
-    const job = await recommendationQueue.add('generate-ml-recommendation', {
-        userId: user.userId
-    }, {
-        attempts: 5, // Retry up to 5 times (total ~2 minutes)
-        backoff: {
-            type: 'exponential',
-            delay: 10000 // Start with a 10s delay, then 20s, 40s...
-        }
-    });
+    let job;
+    try {
+        job = await recommendationQueue.add('generate-ml-recommendation', {
+            userId: user.userId
+        }, {
+            attempts: 5, // Retry up to 5 times (total ~2 minutes)
+            backoff: {
+                type: 'exponential',
+                delay: 10000 // Start with a 10s delay, then 20s, 40s...
+            }
+        });
+    } catch (error) {
+        // Refund tokens if queueing fails
+        await TokenService.creditTokens(user.userId, 5);
+        throw new ApiError(500, "Failed to queue recommendation job. Tokens have been refunded.");
+    }
 
     // 3. Immediately return the Job ID to the React frontend so it can start polling
     return res.status(202).json(
