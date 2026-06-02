@@ -51,6 +51,12 @@ export const generateRecommendation = asyncHandler(async (req: Request, res: Res
     // We pass the userId in the job data so the worker knows who to process
     const job = await recommendationQueue.add('generate-ml-recommendation', {
         userId: user.userId
+    }, {
+        attempts: 3, // Retry up to 3 times
+        backoff: {
+            type: 'exponential',
+            delay: 3000 // Start with a 3 second delay, then 6s, to allow ML service to wake up
+        }
     });
 
     // 3. Immediately return the Job ID to the React frontend so it can start polling

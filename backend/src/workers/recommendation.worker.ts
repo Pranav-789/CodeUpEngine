@@ -56,6 +56,9 @@ export const recommendationWorker = new Worker('recommendationQueue', async (job
 
     if (!response.ok) {
         const errorText = await response.text();
+        if (errorText.toLowerCase().includes("<html")) {
+            throw new Error(`ML Service is temporarily unavailable (HTTP ${response.status}). Please try again.`);
+        }
         throw new Error(`FastAPI ML Service failed: ${errorText}`);
     }
 
