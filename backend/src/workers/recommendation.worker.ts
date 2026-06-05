@@ -88,10 +88,11 @@ export const recommendationWorker = new Worker('recommendationQueue', async (job
     
     await metrics.save();
 
-    // 4. Return the new recommendations. 
-    // This return value automatically gets saved to `job.returnvalue`, 
-    // which your `checkJobStatus` controller sends to the frontend!
-    return metrics.activeRecommendations;
+    // 4. Return a minimal status — NOT the full recommendations array.
+    // The frontend fetches fresh data via refreshMetrics() on completion.
+    // Storing the full Mongoose subdoc array in job.returnvalue was bloating 
+    // Redis by ~1-2 KB per job due to Mongoose internal metadata serialization.
+    return { success: true, count: data.recommendations.length };
     
 }, { 
     connection: redisConnection as any,

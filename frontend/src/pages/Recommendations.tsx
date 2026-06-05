@@ -7,7 +7,7 @@ import { BrainCircuit, Loader2, ExternalLink } from "lucide-react";
 
 export const Recommendations: React.FC = () => {
   const { user, updateUserTokens } = useAuth();
-  const { metrics, updateRecommendations, refreshMetrics } = useUserMetrics();
+  const { metrics, refreshMetrics } = useUserMetrics();
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -65,14 +65,10 @@ export const Recommendations: React.FC = () => {
           setIsGenerating(false);
           setPollStatus(null);
           
-          if (res.data.data.recommendations) {
-            updateRecommendations(res.data.data.activeRecommendations);
-            toast.success("Recommendation generated!");
-          } else {
-            // fallback if response doesn't have recommendations payload
-            await refreshMetrics();
-            toast.success("Crunching complete! Check your new active recommendations.");
-          }
+          // Fetch fresh recommendations from MongoDB
+          // (worker returns minimal status to save Redis memory)
+          await refreshMetrics();
+          toast.success("Recommendations generated successfully!");
         } else if (status === "failed") {
           clearInterval(interval);
           setJobId(null);
@@ -92,7 +88,7 @@ export const Recommendations: React.FC = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [jobId, updateRecommendations, refreshMetrics]);
+  }, [jobId, refreshMetrics]);
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">

@@ -11,4 +11,11 @@ export const recommendationQueue = new Queue('recommendationQueue', {
     // Auto-clean failed jobs after 24 hours
     removeOnFail: { age: 86400 },
   },
+  streams: {
+    events: {
+      // Cap the events stream to 100 entries (~50 KB max)
+      // Without this, the stream grows unboundedly and is the #1 memory hog
+      maxLen: 100,
+    },
+  },
 });
