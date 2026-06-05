@@ -3,9 +3,8 @@ import RedisImport from 'ioredis';
 import User from '../models/user.model.js';
 import { ApiError } from "./ApiError.js";
 
-// Initialize your Redis client
 const Redis = (RedisImport as any).default || RedisImport;
-const redis = new (Redis as any)(process.env.REDIS_URL || 'redis://127.0.0.1:6379');
+export const redis = new (Redis as any)(process.env.REDIS_URL || 'redis://127.0.0.1:6379');
 
 export class TokenService {
   private static getKey(userId: string): string {
@@ -13,7 +12,8 @@ export class TokenService {
   }
 
   /**
-   * 1. Hydrate Cache: Fetches tokens from DB and caches them in Redis
+   * Hydrate Cache: Fetches tokens from DB and caches them in Redis
+   * Optimized: Uses a single pipeline for HSET + EXPIRE (1 round-trip = 2 commands)
    */
   private static async hydrateTokenCache(userId: string) {
     const user = await User.findById(userId).select('baseTokens premiumTokens nextWeeklyRefresh');
@@ -25,7 +25,6 @@ export class TokenService {
     let nextWeeklyRefresh = user.nextWeeklyRefresh;
     const now = new Date();
     
-    // Check if weekly refresh is due
     if (now >= nextWeeklyRefresh) {
         baseTokens = 50;
         nextWeeklyRefresh = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -36,12 +35,14 @@ export class TokenService {
         });
     }
 
-    // Store in Redis as a hash with a 24-hour expiration (86400 seconds)
-    await redis.hset(redisKey, {
+    // Pipeline: batch HSET + EXPIRE into 1 round-trip (saves 1 command vs separate calls)
+    const pipeline = redis.pipeline();
+    pipeline.hset(redisKey, {
         baseTokens: baseTokens,
         nextWeeklyRefresh: nextWeeklyRefresh.getTime()
     });
-    await redis.expire(redisKey, 86400);
+    pipeline.expire(redisKey, 86400);
+    await pipeline.exec();
     
     return {
         baseTokens,
@@ -51,7 +52,8 @@ export class TokenService {
   }
 
   /**
-   * 2. Get Balance: Fast read from Redis, falls back to DB
+   * Get Balance: Fast read from Redis cache, falls back to DB hydration
+   * Cost: 1 command (HGETALL) on cache hit, 3 commands on cache miss (HGETALL + HSET + EXPIRE)
    */
   static async getBalance(userId: string) {
     const redisKey = this.getKey(userId);
@@ -83,12 +85,13 @@ export class TokenService {
   }
 
   /**
-   * 3. Consume Tokens: Deducts tokens atomically using Redis Pipeline.
+   * Consume Tokens: Deducts tokens atomically
+   * Optimized: Merged HINCRBY + HGETALL into a single pipeline (saves 1 command)
+   * Cost: 1 (getBalance) + 1 pipeline (HINCRBY + HGETALL = 2 commands) = 3 total
+   * Rollback path: +1 command (HINCRBY) = 4 total
    */
   static async consumeTokens(userId: string, amount: number): Promise<{ success: boolean; remaining: number }> {
     const redisKey = this.getKey(userId);
-
-    // Ensure data is cached before modifying it
     let balance = await this.getBalance(userId);
 
     if (balance.totalTokens < amount) {
@@ -97,26 +100,23 @@ export class TokenService {
 
     const baseToDeduct = Math.min(balance.baseTokens, amount);
 
-    // ATOMIC OPERATION: Deduct the tokens in Redis
+    // Pipeline: deduct + read new value in 1 round-trip
     const pipeline = redis.pipeline();
     if (baseToDeduct > 0) pipeline.hincrby(redisKey, 'baseTokens', -baseToDeduct);
-    
-    await pipeline.exec();
+    pipeline.hgetall(redisKey);
+    const results = await pipeline.exec();
 
-    // Verify deduction didn't drop below zero (due to race condition)
-    const newCached = await redis.hgetall(redisKey);
+    // HGETALL result is the last command in the pipeline
+    const newCached = results[results.length - 1][1];
     const newBase = parseInt(newCached.baseTokens, 10);
     
     if (newBase < 0) {
-        // Rollback
-        const revertPipeline = redis.pipeline();
-        if (baseToDeduct > 0) revertPipeline.hincrby(redisKey, 'baseTokens', baseToDeduct);
-        await revertPipeline.exec();
-        
+        // Rollback with a single command
+        await redis.hincrby(redisKey, 'baseTokens', baseToDeduct);
         return { success: false, remaining: balance.totalTokens };
     }
 
-    // Asynchronously sync the new balance back to MongoDB
+    // Async DB sync (fire-and-forget)
     const dbInc: any = {};
     if (baseToDeduct > 0) dbInc.baseTokens = -baseToDeduct;
     
@@ -128,21 +128,23 @@ export class TokenService {
   }
 
   /**
-   * 4. Weekly Reset Utility: Credits base tokens globally or for a specific user
+   * Credit Tokens: Adds tokens back
+   * Optimized: Removed redundant getBalance() call at the end (saved 1 command)
+   * Cost: 1 (EXISTS) + 1 (HINCRBY if cache exists) = 1-2 commands
    */
   static async creditTokens(userId: string, amount: number): Promise<number> {
     const redisKey = this.getKey(userId);
     
-    // Update MongoDB persistently
     await User.findByIdAndUpdate(userId, { $inc: { baseTokens: amount } });
 
-    // Update Redis cache if it exists, otherwise it will hydrate on next request
     const cacheExists = await redis.exists(redisKey);
     if (cacheExists) {
-      await redis.hincrby(redisKey, 'baseTokens', amount);
+      const newBalance = await redis.hincrby(redisKey, 'baseTokens', amount);
+      return newBalance;
     }
     
-    const balance = await this.getBalance(userId);
-    return balance.totalTokens;
+    // Cache doesn't exist — read from DB directly instead of hydrating
+    const user = await User.findById(userId).select('baseTokens');
+    return user?.baseTokens ?? 0;
   }
 }

@@ -4,6 +4,8 @@ import UserMetrics from "../models/usermetric.model.js";
 import User from "../models/user.model.js";
 import { TokenService } from "../utils/tokenService.js";
 
+// Worker MUST have its own dedicated connection (BullMQ requirement for blocking operations)
+// Cannot share the tokenService connection because Workers use BRPOPLPUSH which blocks the connection
 const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: null
 });
@@ -91,7 +93,13 @@ export const recommendationWorker = new Worker('recommendationQueue', async (job
     // which your `checkJobStatus` controller sends to the frontend!
     return metrics.activeRecommendations;
     
-}, { connection: redisConnection as any });
+}, { 
+    connection: redisConnection as any,
+    // Reduce background noise: check for stalled jobs every 5 min instead of 30 sec
+    stalledInterval: 300000,
+    // Max stalled count before marking as failed (default is 1)
+    maxStalledCount: 2
+});
 
 // Listen for errors so the worker doesn't crash silently
 recommendationWorker.on('failed', async (job, err) => {

@@ -1,12 +1,14 @@
 // queues/recommendation.queue.ts
 import { Queue } from 'bullmq';
-import { Redis } from 'ioredis';
+import { redis } from './tokenService.js';
 
-const redisConnection = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  maxRetriesPerRequest: null
-});
-redisConnection.on('error', (err) => console.error('Redis Queue Error:', err));
-
+// Reuse the existing Redis connection from tokenService (saves 1 persistent connection)
 export const recommendationQueue = new Queue('recommendationQueue', {
-  connection: redisConnection as any,
+  connection: redis as any,
+  defaultJobOptions: {
+    // Auto-clean completed jobs after 1 hour (saves storage + reduces KEYS overhead)
+    removeOnComplete: { age: 3600 },
+    // Auto-clean failed jobs after 24 hours
+    removeOnFail: { age: 86400 },
+  },
 });

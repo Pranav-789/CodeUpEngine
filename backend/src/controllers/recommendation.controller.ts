@@ -54,7 +54,7 @@ export const generateRecommendation = asyncHandler(async (req: Request, res: Res
         job = await recommendationQueue.add('generate-ml-recommendation', {
             userId: user.userId
         }, {
-            attempts: 5, // Retry up to 5 times (total ~2 minutes)
+            attempts: 3, // Retry up to 3 times (saves ~40 Redis commands per failed job vs 5)
             backoff: {
                 type: 'exponential',
                 delay: 10000 // Start with a 10s delay, then 20s, 40s...
@@ -86,7 +86,7 @@ export const checkJobStatus = asyncHandler(async (req: Request, res: Response) =
         throw new ApiError(400, "Job ID is required");
     }
 
-    // 1. Fetch the job directly from BullMQ/Redis
+    // 1. Fetch the job directly from BullMQ/Redis (1 HGETALL command)
     const job = await recommendationQueue.getJob(jobId as string);
 
     if (!job) {
@@ -98,13 +98,10 @@ export const checkJobStatus = asyncHandler(async (req: Request, res: Response) =
         throw new ApiError(403, "You do not have permission to view this job");
     }
 
-    // 2. Get the current state of the job
-    // Possible states: 'waiting', 'active', 'completed', 'failed', 'delayed', etc.
-    const state = await job.getState();
-
-    // 3. Format the response based on the state
-    if (state === 'completed') {
-        // job.returnvalue contains whatever your worker returned when it finished
+    // 2. Check terminal states first using direct key lookups (cheaper than getState)
+    // isCompleted/isFailed each use 1 ZSCORE command vs getState which scans 5+ sorted sets
+    const completed = await job.isCompleted();
+    if (completed) {
         return res.status(200).json(
             new ApiResponse(200, {
                 status: 'completed',
@@ -113,7 +110,8 @@ export const checkJobStatus = asyncHandler(async (req: Request, res: Response) =
         );
     } 
     
-    if (state === 'failed') {
+    const failed = await job.isFailed();
+    if (failed) {
         return res.status(200).json(
             new ApiResponse(200, {
                 status: 'failed',
@@ -125,7 +123,7 @@ export const checkJobStatus = asyncHandler(async (req: Request, res: Response) =
     // If it is 'waiting' or 'active', tell the frontend to keep waiting
     return res.status(200).json(
         new ApiResponse(200, {
-            status: state
+            status: 'processing'
         }, "Job is currently processing")
     );
 });

@@ -41,7 +41,20 @@ export const Recommendations: React.FC = () => {
   useEffect(() => {
     if (!jobId) return;
 
+    const startTime = Date.now();
+    const TIMEOUT_MS = 60000; // 60 seconds timeout
+
     const interval = setInterval(async () => {
+      // 1. Timeout Check
+      if (Date.now() - startTime > TIMEOUT_MS) {
+        clearInterval(interval);
+        setJobId(null);
+        setIsGenerating(false);
+        setPollStatus(null);
+        toast.error("Generation timed out. The service might be overloaded.");
+        return;
+      }
+
       try {
         const res = await api.get(`/recommendations/status/${jobId}`);
         const status = res.data.data.status;
@@ -76,7 +89,7 @@ export const Recommendations: React.FC = () => {
         setPollStatus(null);
         toast.error("Error polling job status");
       }
-    }, 2000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [jobId, updateRecommendations, refreshMetrics]);
