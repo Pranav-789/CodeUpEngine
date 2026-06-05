@@ -100,9 +100,10 @@ export class TokenService {
 
     const baseToDeduct = Math.min(balance.baseTokens, amount);
 
-    // Pipeline: deduct + read new value in 1 round-trip
+    // Pipeline: deduct + read new value + refresh TTL in 1 round-trip
     const pipeline = redis.pipeline();
     if (baseToDeduct > 0) pipeline.hincrby(redisKey, 'baseTokens', -baseToDeduct);
+    pipeline.expire(redisKey, 86400);
     pipeline.hgetall(redisKey);
     const results = await pipeline.exec();
 
@@ -139,7 +140,12 @@ export class TokenService {
 
     const cacheExists = await redis.exists(redisKey);
     if (cacheExists) {
-      const newBalance = await redis.hincrby(redisKey, 'baseTokens', amount);
+      // Pipeline: credit + refresh TTL in 1 round-trip
+      const pipeline = redis.pipeline();
+      pipeline.hincrby(redisKey, 'baseTokens', amount);
+      pipeline.expire(redisKey, 86400);
+      const results = await pipeline.exec();
+      const newBalance = results[0][1] as number;
       return newBalance;
     }
     
